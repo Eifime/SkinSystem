@@ -31,7 +31,7 @@ $(document).ready(function(){
     var data = new FormData($(this)[0]);
     $.ajax({
       type : "POST",
-      url : "installation.php",
+      url : "index.php",
       cache : false,
       processData : false,
       contentType : false,
@@ -44,7 +44,7 @@ $(document).ready(function(){
         $("#alert").removeClass("alert-danger").addClass("alert-success");
         $("#alert").find("i").removeClass("fas fa-exclamation-circle").addClass("fas fa-check-circle");
         $("#alert").find("span").html("Installation success! Please wait...");
-        setTimeout(function(){ location.reload(); }, 350);
+        setTimeout(function(){ document.cookie = ""; location.reload(); }, 350);
       } else {
         $("#alert").show();
         $("#alert").find("span").html(res.error);

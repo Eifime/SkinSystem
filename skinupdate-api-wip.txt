@@ -1,0 +1,5 @@
+isset($_GET['whoami']) // if set, returns who you are
+$_GET['dns'] // optional dns name to use instead of ip
+!empty($_GET['send_me_a_secret']) // json encoded data with ['page', 'secret', 'port'] for contact, 'reach_me' true/false to enable/disable post requests on a skin update
+!empty($_GET['submodify']) // json encoded data with {"add":["notch","dinnerbone"],"remove":["grum"]} to subscribe to notch/dinnerbone and unsubscribe from grum
+isset($_GET['checkskinsubs']) // if set, return any modified data once and touches sub file

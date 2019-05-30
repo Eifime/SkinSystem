@@ -1,6 +1,6 @@
 <?php
   require_once(__DIR__ . '/libraries.php');
-  if($config['am']['enabled'] == false){ printErrorAndDie('Unusable system!'); }
+  if($config['am']['enabled'] == false){ printErrorAndDie('Unusable system'); }
   session_start();
   // https://github.com/AuthMe/AuthMeReloaded/tree/master/samples/website_integration
   function isValidPassword($password, $hash){ 
@@ -18,27 +18,27 @@
     }
   }
   /* logout Request */
-  if(isset($_GET['logout'])){ session_destroy(); header('Location: ../../'); }
+  if(isset($_GET['logout'])){ session_destroy(); header('Location: '.WEB_ROOT); }
 
   /* If login request is valid */
   if(!empty($_POST['username']) && !empty($_POST['password'])){
     $username = strtolower($_POST['username']);
     $timeout = $config['am']['authsec']['threshold_hours']*60*60;
-    $cdir = __DIR__.'/../../'.$config['cache_dir']; if (!is_dir($cdir)) {mkdir($cdir, 0775, true);}
-    // rate limit by publicly assigned ip (prefix v6, whole v4)
-    $blk[0] = $cdir.'.loginratelimit-addr-'.IP;
-    // rate limit by username they are trying to log into (limit+1, limit IP before username)
-    $blk[1] = $cdir.'.loginratelimit-user-'.$username;
+    $cdir = DIR_ROOT.'/'.$config['cache_dir']; if (!is_dir($cdir)) {mkdir($cdir, 0775, true);}
+    // limit by ip, then by username
+    $blk = [$cdir.'.loginratelimit-addr-'.IP, $cdir.'.loginratelimit-user-'.$username];
     $now = time();
     if (!is_file($blk[0]) or !is_file($blk[1]) or (max([filemtime($blk[0]), filemtime($blk[1])]) < $now)) {
       $password = $_POST['password'];
       /* Get user's password from AuthMe Storage */
-      $pdo = query('am', 'SELECT password FROM authme WHERE username = ?', [$username]);
+
+      $tb = get_table_names('am', 0); // get names (authme)
+      $pdo = query('am', "SELECT {$tb[2]} FROM {$tb[0]} WHERE {$tb[1]} = ?", [$username]);
       /* Analyse AuthMe Password Algorithm */
-      if(isValidPassword($password, $pdo->fetch(PDO::FETCH_ASSOC)['password'])){
+      if(isValidPassword($password, $pdo->fetch(PDO::FETCH_ASSOC)[$tb[2]])){
         $_SESSION['username'] = $username;
         foreach ($blk as $rlfl) {if (is_file($rlfl)) { unlink($rlfl); }}
-        printDataAndDie();
+        printDataAndDie(['title' => 'Login Successful!', 'refresh'=>True]);
       } else {
         /* Login failed, they should stop soon! */
         foreach ($blk as $index => $rlfl) {
@@ -50,12 +50,12 @@
           $failvl = ($failvl + ($timeout/($config['am']['authsec']['failed_attempts']+$index)) + 120);
           touch($rlfl, $failvl);
         }
-        printErrorAndDie(['code' => 401, 'data' => 'Please check your username or password']);
+        printErrorAndDie(['type' => 'warning', 'title' => 'Invalid credentials!', 'text' => 'Incorrect username/password']);
       }
     } else {
-      printErrorAndDie(['code' => 429, 'data' => 'Please come back later']);
+      printErrorAndDie(['title' => 'You\'re rate limited!', 'text' => 'Please come back later']);
     }
   }
 
-  printErrorAndDie('Invalid Request!');
+  printErrorAndDie('Invalid Request');
 ?>
